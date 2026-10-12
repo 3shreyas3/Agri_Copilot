@@ -3,6 +3,7 @@
 # 🌱 AgriCopilot (agriAi)
 ### Precision Agronomy, In-Browser Pedological Vision, Mandi Arbitrage & Institutional Credit
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://agri-copilot.navuychaudary2004.workers.dev)
 [![React 18](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![Vite 6](https://img.shields.io/badge/Vite-6.0.7-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
@@ -15,7 +16,11 @@
   <b>An offline-first, client-side agricultural decision intelligence platform and precision agronomy copilot designed to empower Indian smallholders and commercial cultivators.</b>
 </p>
 
-[Problem Statement](#-problem-statement) • [The Solution](#-the-solution) • [Key Features](#-key-features) • [System Architecture](#-system-architecture) • [User Flow](#-user-flow) • [Mathematical Formulations](#-core-mathematical-engines) • [Technology Stack](#-technology-stack) • [Installation & Setup](#-installation--quick-start) • [Verification Scenarios](#-verification-scenarios)
+<p align="center">
+  🌐 <b>Live Production URL:</b> <a href="https://agri-copilot.navuychaudary2004.workers.dev" target="_blank"><b>https://agri-copilot.navuychaudary2004.workers.dev</b></a>
+</p>
+
+[Live Demo](https://agri-copilot.navuychaudary2004.workers.dev) • [Problem Statement](#-problem-statement) • [The Solution](#-the-solution) • [Key Features](#-key-features) • [System Architecture](#-system-architecture) • [User Flow](#-user-flow) • [Mathematical Formulations](#-core-mathematical-engines) • [Technology Stack](#-technology-stack) • [Installation & Setup](#-installation--quick-start) • [Verification Scenarios](#-verification-scenarios)
 
 ---
 
