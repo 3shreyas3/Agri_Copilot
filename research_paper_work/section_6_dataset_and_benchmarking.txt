@@ -1,0 +1,95 @@
+================================================================================
+SECTION VI: DATASET DESIGN AND EXPERIMENTAL BENCHMARKING
+File Location: D:\Agri Copilot\research_paper_work\section_6_dataset_and_benchmarking.txt
+Document Type: IEEE-Compliant Academic Research Text (Clean Format, No Asterisks)
+Grounded Exclusively on Codebase: D:\Agri Copilot
+================================================================================
+
+SECTION VI: DATASET DESIGN AND EXPERIMENTAL BENCHMARKING
+
+To establish scientific validity, statistical repeatability, and empirical rigor, AgriCopilot grounds its models in structured agronomic datasets curated from premier agricultural institutes and tests its client-side vision pipeline across standardized benchmarks. This section outlines the data schemas, calibration ground truths, in-browser model verification protocols, and quantitative evaluation metrics utilized in the experimental evaluation.
+
+
+A. Ground-Truth Data Curation and Schemas
+
+Rather than relying on unverified synthetic tables, AgriCopilot structures its knowledge bases around validated agronomic standards, statutory pricing benchmarks, and regulatory banking frameworks in India.
+
+1. Pedological Soil Ground-Truth Schema:
+The pedological classification model in trainedSoilModel.js is calibrated against physical soil profiles established by the National Bureau of Soil Survey and Land Use Planning (ICAR-NBSS&LUP). The dataset models the six dominant Indian soil orders with exact numerical centroid weights and tolerance vectors across nine feature dimensions:
+- Attribute Schema for Each Soil Class:
+  Class Identifier: Unique soil order key (black, red, laterite, sandy_loam, clayey, alluvial).
+  Taxonomic Classification: Full scientific name and soil family (e.g., Montmorillonite Vertisols, Ferric Iron Alfisols, Kaolinitic Oxisols).
+  Perceptual Centroid Weights Vector: Calibrated ground-truth means for L, a, b, rNorm, gNorm, bNorm, rednessIdx, organicIdx, and spatial roughness.
+  Tolerance Variance Vector: Class-specific standard deviations defining acceptable intra-class morphological variability.
+  Agronomic Traits: Qualitative descriptions of organic matter content, soil texture, drainage aeration, and cation-exchange capacity.
+
+2. Comprehensive Agronomic Crop Profile Schema:
+Curated in agriKnowledge.js, the agronomic repository structures biological parameters for 12 major Indian field, pulse, and commercial crops (Paddy, Maize, Ragi, Jowar, Cotton, Groundnut, Sugarcane, Tomato, Onion, Soybean, Wheat, and Bengal Gram):
+- Crop Identifier and Category: Name, biological category (Cereal, Millet, Pulse, Oilseed, Commercial Cash Crop, or Horticultural Vegetable).
+- Ideal Soil Orders: Array of taxonomically optimal soil orders and compatible secondary soil families.
+- Physiological Thermal Boundaries: Cardinal parameters defining absolute vegetative minimum (T_min), maximum upper limit (T_max), and optimal physiological temperature (T_opt) in degrees Celsius.
+- Hydrological Water Requirement: Seasonal minimum rainfall (R_min), maximum flood tolerance (R_max), and optimal requirement (R_opt) in millimeters.
+- Regional Pest Vulnerability: District-level pest epidemiology mapping regional hazards (e.g., Davanagere Maize Stem Borer and Fall Armyworm Spodoptera frugiperda) alongside non-chemical biological management tips.
+- Economic Floor Benchmarks: Historical modal mandi price ranges (basePriceRange) and statutory Minimum Support Prices (MSP) established by the Commission for Agricultural Costs and Prices (CACP).
+- Value-Addition Opportunities: Primary processing interventions (e.g., sorting, grading, solar dehydration, and puree processing) paired with estimated margin expansions.
+
+3. Institutional Credit and Subsidy Data Schema:
+Curated in bankingSchemes.js and governance modules, the financial database models regulatory loan eligibility rules from the Reserve Bank of India (RBI) and NABARD:
+TABLE II: Institutional Credit and Subsidy Data Schema
+- Attribute: FarmerID | Description: Unique tracking identifier for the farmer profile.
+- Attribute: LandholdingSize | Description: Total cultivated landholding in acres.
+- Attribute: Categorization | Description: Operational segment (Smallholder <2.0 Acres vs. Commercial Scale >=2.0 Acres).
+- Attribute: BankName | Description: Providing public-sector bank or cooperative credit society.
+- Attribute: SchemeName | Description: Title of credit or subsidy program (e.g., Kisan Credit Card, Agriculture Infrastructure Fund).
+- Attribute: SubsidizedRate | Description: Effective borrowing cost per annum (e.g., 4.0% p.a. for KCC; 3.0% subvention for AIF).
+- Attribute: MaximumLimit | Description: Credit ceiling (e.g., 1.6 Lakh INR collateral-free; up to 2.0 Crore INR term loan).
+- Attribute: EligibilityStatus | Description: Algorithmic qualification state (Approved, Conditional, or Excluded).
+- Attribute: DecisionReason | Description: Transparent natural-language explanation of regulatory eligibility criteria.
+- Attribute: Solution | Description: Direct actionable remediation steps and portal redirection link.
+- Attribute: RedirectURL | Description: Official Government of India web portal endpoint for direct digital application.
+
+4. Geospatial Interstate Mandi and Logistics Schema:
+Curated in marketRedirectionData.js, the spatial routing database models origin farming mandis (e.g., Davanagere, Chitradurga, Belagavi, Kolar) and terminal consumer mandis (e.g., Mumbai Vashi, Pune APMC, Chennai Koyambedu, Hyderabad Bowenpally). Each market record embeds exact geographic coordinates (latitude and longitude), live wholesale price feeds, highway corridor identifiers (NH 48, NH 44, NH 75), and empirical freight haulage rates per quintal.
+
+
+B. In-Browser Pedological Model Formulation and Verification
+
+Unlike conventional deep-learning classifiers that require gigabytes of cloud GPU weights, AgriCopilot’s vision classifier is formulated as an in-browser Scaled Centroid Classifier with Variance-Normalized Distance Metrics and Temperature-Scaled Softmax Normalization.
+
+1. Mathematical Centroid Calibration:
+Reference centroids and tolerance vectors were calibrated by aggregating digitized spectral reflectances from the Munsell Soil Color Charts and ICAR-NBSS&LUP benchmark soil profiles. For each soil class k, the coordinate vector represents the geometric mean across standardized soil illumination tests, and the tolerance parameter represents one standard deviation of morphological variance under varying moisture contents.
+
+2. In-Browser Verification Protocol:
+To rigorously verify model robustness directly on client devices without external test harnesses:
+- Calibrated Physical Benchmarks: The system embeds calibrated high-resolution optical benchmarks in SAMPLE_SOIL_PREVIEWS, representing certified samples of Vertisols, Alfisols, Oxisols, Arenosols, Clayey, and Alluvial soils.
+- Synthetic Clod Noise Injection Testing: Implemented in generateSyntheticSoilDataUrl, the platform incorporates an in-browser synthetic sample generator. Using HTML5 Canvas pixel manipulation, it renders synthetic soil swatches with controlled RGB Gaussian noise levels (noiseLevel = 22) to evaluate classification stability across textured clods, micro-shadows, and sensor noise.
+- Mismatch Sensitivity Protocol: The verification harness systematically pairs stated soil inputs against conflicting physical image samples (e.g., pairing user-stated Black Soil with a Red Alfisol image) to verify that the mismatch detection pipeline achieves 100% detection sensitivity, correctly triggers the -1.6 health penalty, and issues explanatory alerts.
+
+
+C. Quantitative Performance Evaluation Metrics
+
+To evaluate model accuracy, computational efficiency, and economic efficacy, the experimental evaluation employs the following quantitative metrics:
+
+1. Pedological Classification Accuracy Metrics:
+- Top-1 Classification Accuracy: The percentage of test soil samples where the highest predicted probability corresponds to the ground-truth soil order.
+- Top-2 (Runner-Up) Accuracy: The percentage of test samples where the ground-truth order appears within the top two ranked classes.
+- Confusion Matrix Parameters: Per-class Precision, Recall, Specificity, and F1-Score:
+  Precision = TruePositives / (TruePositives + FalsePositives)
+  Recall = TruePositives / (TruePositives + FalseNegatives)
+  F1_Score = (2 * Precision * Recall) / (Precision + Recall)
+
+2. Computational Runtime Benchmarks:
+- In-Browser Inference Latency: Measured in milliseconds (ms) using the high-resolution browser performance.now() API across diverse client environments (desktop browsers, low-cost Android smartphones, and tablet devices). Latency benchmarks isolate canvas image draw time, 5-zone spatial pooling, 9D feature extraction, and Softmax probability distribution.
+- Memory Footprint: Total heap allocation consumed during image decoding and canvas manipulation, verifying that memory utilization remains under 15 megabytes to prevent browser tab crashes on low-end hardware.
+
+3. Mismatch Detection Performance:
+- Mismatch Sensitivity (True Positive Mismatch Rate): Evaluates the system's ability to detect discrepancies when a farmer selects a soil type incompatible with the optical photograph.
+
+4. Microeconomic and Arbitrage Validation Metrics:
+- Gross Price Spread: Difference between destination terminal price and local depressed mandi price (INR per Quintal).
+- Net Arbitrage Yield: Net profit gain remaining after deducting highway diesel freight and toll costs per quintal:
+  Net_Arbitrage = (P_destination - P_local) - Freight_Cost_per_Quintal
+- Return on Investment (ROI %):
+  ROI = (Net_Arbitrage / P_local) * 100
+- Value-Addition Profit Boost: Percentage net margin expansion achieved by sorting and grading raw produce prior to wholesale auction.
+================================================================================
