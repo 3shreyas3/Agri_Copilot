@@ -14,13 +14,12 @@ export default function Navbar({
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
+  // STRICTLY ONLY FOUR LANGUAGES: English, Kannada, Telugu, Hindi
   const languages = [
     { code: 'en', label: 'English', native: 'English' },
     { code: 'kn', label: 'Kannada', native: 'ಕನ್ನಡ' },
-    { code: 'hi', label: 'Hindi', native: 'हिन्दी' },
-    { code: 'mr', label: 'Marathi', native: 'मराठी' },
-    { code: 'pa', label: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
-    { code: 'te', label: 'Telugu', native: 'తెలుగు' }
+    { code: 'te', label: 'Telugu', native: 'తెలుగు' },
+    { code: 'hi', label: 'Hindi', native: 'हिन्दी' }
   ];
 
   return (
@@ -36,14 +35,14 @@ export default function Navbar({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-xl sm:text-2xl tracking-tight text-slate-900 font-sans">
-                  Agri<span className="text-emerald-600">Copilot</span>
+                  {t.appTitle ? t.appTitle : 'AgriCopilot'}
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300/60">
-                  v2.4 AI
+                  {t.versionBadge || 'v2.4 AI'}
                 </span>
               </div>
               <p className="text-xs text-slate-500 hidden sm:block font-medium">
-                Autonomous Agronomic Advisory & Market Decision Intelligence
+                {t.tagline || 'Autonomous Agronomic Advisory & Market Decision Intelligence'}
               </p>
             </div>
           </div>
@@ -56,10 +55,10 @@ export default function Navbar({
               <button
                 onClick={onStopAudio}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-300 rounded-lg animate-pulse hover:bg-rose-100 transition"
-                title="Stop Audio Narration"
+                title={t.stopVoice || 'Stop Voice'}
               >
                 <Volume2 className="w-3.5 h-3.5 animate-bounce" />
-                <span className="hidden md:inline">Playing Voice...</span> (Stop)
+                <span className="hidden md:inline">{t.playingVoice || 'Playing Voice...'}</span> ({t.stopAudio || 'Stop'})
               </button>
             )}
 
@@ -80,7 +79,7 @@ export default function Navbar({
               {langMenuOpen && (
                 <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50">
                   <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Select Language
+                    {t.selectLanguage || 'Select Language'}
                   </div>
                   {languages.map((l) => (
                     <button
@@ -103,19 +102,20 @@ export default function Navbar({
             <button
               onClick={onOpenHistory}
               className="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-sm transition flex items-center gap-1.5"
-              title="View Advisory History"
+              title={t.history || 'History'}
             >
               <History className="w-4 h-4 text-slate-600" />
-              <span className="hidden md:inline">History</span>
+              <span className="hidden md:inline">{t.history || 'History'}</span>
             </button>
-            {/* Settings (Live API Key configuration) */}
+
+            {/* Settings */}
             <button
               onClick={onOpenSettings}
               className="p-2 sm:px-3 sm:py-2 text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-sm transition flex items-center gap-1.5"
-              title="Configure API Settings"
+              title={t.settings || 'Settings'}
             >
               <Settings className="w-4 h-4 text-slate-600" />
-              <span className="hidden lg:inline">Settings</span>
+              <span className="hidden lg:inline">{t.settings || 'Settings'}</span>
             </button>
 
           </div>

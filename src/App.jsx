@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
-import MandiTicker from './components/MandiTicker';
 import FarmerInputForm from './components/FarmerInputForm';
 import AdvisoryReport from './components/AdvisoryReport';
 import SettingsModal from './components/SettingsModal';
@@ -10,7 +9,7 @@ import AIGenerationModal from './components/AIGenerationModal';
 import Footer from './components/Footer';
 import { generateLocalAdvisory, callGeminiAdvisoryAPI } from './services/advisoryEngine.js';
 import { stopAdvisorySpeech } from './services/speechService.js';
-import { TRANSLATIONS } from './translations.js';
+import { TRANSLATIONS, getTranslatedCropName, getTranslatedDistrict } from './translations.js';
 import MarketRedirectionMap from './components/MarketRedirectionMap';
 import GovernanceAndFinanceTab from './components/GovernanceAndFinanceTab';
 import { CheckCircle2, Sparkles, TrendingUp, ShieldAlert, Cpu, FileText, Eye, ArrowRight, X, Truck, Navigation, Landmark } from 'lucide-react';
@@ -37,8 +36,10 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [isSaved, setIsSaved] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [activeMainTab, setActiveMainTab] = useState('form'); // 'form' | 'report'
+  const [activeMainTab, setActiveMainTab] = useState('form'); // 'form' | 'report' | 'redirection' | 'governance'
   const [successToast, setSuccessToast] = useState(null);
+
+  const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
   // Modals
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -61,15 +62,23 @@ export default function App() {
     }
   }, []);
 
-  // Handle Form Submission with High-Tech Diagnostic Modal
+  // When language changes, if an active advisory exists, re-generate it in the newly chosen language
+  useEffect(() => {
+    if (advisory && formData.cropName && formData.soilType) {
+      const updated = generateLocalAdvisory({ ...formData, language });
+      setAdvisory(updated);
+    }
+  }, [language]);
+
+  // Handle Form Submission with Diagnostic Modal
   const handleGenerateAdvisory = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setIsGenerating(true);
     setIsSaved(false);
-    setIsModalOpen(true); // Opens the animated diagnostic HUD
+    setIsModalOpen(true);
   };
 
-  // Called when AI Diagnostic Modal completes all 6 evaluation steps
+  // Called when AI Diagnostic Modal completes all evaluation steps
   const handleDiagnosticComplete = async () => {
     try {
       let resultAdvisory = null;
@@ -81,31 +90,31 @@ export default function App() {
             apiKey: apiKey.trim(),
             modelName,
             formData,
-            base64Image: formData.soilImage
+            base64Image: formData.soilImage,
+            language
           });
 
-          resultAdvisory = generateLocalAdvisory(formData);
+          resultAdvisory = generateLocalAdvisory({ ...formData, language });
           if (liveMarkdown) {
             resultAdvisory.markdownOutput = liveMarkdown;
           }
         } catch (apiErr) {
           console.warn('Live API call failed, falling back to offline agronomic engine:', apiErr);
-          resultAdvisory = generateLocalAdvisory(formData);
+          resultAdvisory = generateLocalAdvisory({ ...formData, language });
         }
       } else {
-        resultAdvisory = generateLocalAdvisory(formData);
+        resultAdvisory = generateLocalAdvisory({ ...formData, language });
       }
 
       if (resultAdvisory) {
         setAdvisory(resultAdvisory);
-        setSuccessToast(`AgriCopilot Advisory updated for ${formData.farmerName} in ${formData.district}!`);
+        setSuccessToast(t.advisoryGeneratedToast || `AgriCopilot Advisory generated successfully!`);
         setTimeout(() => setSuccessToast(null), 5000);
       }
 
       // Switch to report tab
       setActiveMainTab('report');
 
-      // Smooth scroll to advisory section
       setTimeout(() => {
         const el = document.getElementById('advisory-result-anchor');
         if (el) {
@@ -114,7 +123,7 @@ export default function App() {
       }, 100);
     } catch (err) {
       console.error('Error in advisory generation:', err);
-      const fallback = generateLocalAdvisory(formData);
+      const fallback = generateLocalAdvisory({ ...formData, language });
       setAdvisory(fallback);
     } finally {
       setIsModalOpen(false);
@@ -129,9 +138,9 @@ export default function App() {
       cropName: alternateCropKey
     };
     setFormData(updatedFormData);
-    const newAdvisory = generateLocalAdvisory(updatedFormData);
+    const newAdvisory = generateLocalAdvisory({ ...updatedFormData, language });
     setAdvisory(newAdvisory);
-    setSuccessToast(`Plan switched to ${alternateCropKey}! High risk mitigated (Health Score: ${newAdvisory.cropAnalysis.healthScore}%).`);
+    setSuccessToast(`${t.switchToAlternate}: ${getTranslatedCropName(alternateCropKey, language)}`);
     setTimeout(() => setSuccessToast(null), 4000);
 
     setTimeout(() => {
@@ -145,11 +154,11 @@ export default function App() {
   // Save current advisory to history
   const handleSaveToHistory = () => {
     if (!advisory) return;
-    const updated = [advisory, ...history.slice(0, 19)]; // Keep latest 20
+    const updated = [advisory, ...history.slice(0, 19)];
     setHistory(updated);
     localStorage.setItem('agri_advisory_history', JSON.stringify(updated));
     setIsSaved(true);
-    setSuccessToast('Advisory successfully saved to your farm records!');
+    setSuccessToast(t.saveSuccessToast || 'Advisory successfully saved to your farm records!');
     setTimeout(() => setSuccessToast(null), 3000);
   };
 
@@ -173,8 +182,8 @@ export default function App() {
       farmerName: savedAdvisory.farmerProfile.name,
       landSize: savedAdvisory.farmerProfile.landSize,
       district: savedAdvisory.farmerProfile.district,
-      cropName: savedAdvisory.cropDetails.cropName,
-      soilType: savedAdvisory.cropDetails.soilTypeId || 'black',
+      cropName: savedAdvisory.cropDetails.rawCropKey || savedAdvisory.cropDetails.cropName,
+      soilType: savedAdvisory.cropDetails.soilTypeId || 'red',
       temperature: savedAdvisory.cropDetails.temperature,
       rainfall: savedAdvisory.cropDetails.rainfall,
       regionalPopularity: savedAdvisory.cropDetails.regionalPopularity,
@@ -191,10 +200,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
-      
-      {/* Live Karnataka APMC & Mandi Ticker */}
-      <MandiTicker currentLang={language} />
-
       {/* Main Top Navigation */}
       <Navbar
         language={language}
@@ -225,31 +230,27 @@ export default function App() {
             <div className="max-w-3xl space-y-2.5">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Karnataka AI Agronomist & Decision Intelligence Platform</span>
+                <span>{t.heroTag || 'Karnataka AI Agronomist & Decision Intelligence Platform'}</span>
               </div>
               
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                Precision Agronomy, APMC Price Forecasts & Bank Credit
+                {t.heroHeading || 'Precision Agronomy, APMC Price Forecasts & Bank Credit'}
               </h1>
               
               <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-                Hyper-localized agricultural advisory powering Karnataka and national farmers with soil spectral analysis, harvest price forecasting, Raitha Siri & Krishi Bhagya schemes, and land-size tailored credit.
+                {t.heroDesc || 'AI-powered agricultural intelligence platform delivering soil insights, crop recommendations, market forecasts, government scheme discovery, and personalized credit guidance for every farmer.'}
               </p>
             </div>
 
             {/* Quick Stats Pill */}
-            <div className="grid grid-cols-3 gap-3 bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 text-center shrink-0">
-              <div className="px-2">
-                <div className="text-lg font-black text-emerald-400">12</div>
-                <div className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">KA Districts</div>
-              </div>
-              <div className="px-2 border-x border-white/10">
+            <div className="grid grid-cols-2 gap-3 bg-white/5 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 text-center shrink-0">
+              <div className="px-3 border-r border-white/10">
                 <div className="text-lg font-black text-amber-400">4%</div>
-                <div className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">KCC Interest</div>
+                <div className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">{t.statInterest || 'KCC Interest'}</div>
               </div>
-              <div className="px-2">
+              <div className="px-3">
                 <div className="text-lg font-black text-teal-400">100%</div>
-                <div className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">Offline Ready</div>
+                <div className="text-[10px] text-slate-300 uppercase tracking-wider font-semibold">{t.statOffline || 'Offline Ready'}</div>
               </div>
             </div>
           </div>
@@ -258,168 +259,56 @@ export default function App() {
 
       {/* View Mode Navigation Ribbon */}
       <div className="bg-white border-b border-slate-200 sticky top-16 sm:top-20 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit flex-wrap">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-center">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 max-w-full overflow-x-auto">
             <button
               onClick={() => setActiveMainTab('form')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
                 activeMainTab === 'form'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              <FileText className="w-3.5 h-3.5" />
-              <span>1. Farmer & Crop Form</span>
+              <FileText className="w-4 h-4" />
+              <span>{t.tabForm || 'Farmer Profile'}</span>
             </button>
 
             <button
               onClick={() => setActiveMainTab('report')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
                 activeMainTab === 'report'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              <Eye className="w-3.5 h-3.5" />
-              <span>2. Advisory Report</span>
-              {advisory && (
-                <span className="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono">
-                  {advisory.cropAnalysis.healthScore}%
-                </span>
-              )}
+              <Eye className="w-4 h-4" />
+              <span>{t.tabReport || 'Advisory Report'}</span>
             </button>
 
             <button
               onClick={() => setActiveMainTab('redirection')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
                 activeMainTab === 'redirection'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              <Truck className="w-3.5 h-3.5" />
-              <span>3. Market Redirection (Map)</span>
-              {Number(formData.regionalPopularity) > 70 ? (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-500 text-white animate-pulse">
-                  Glut &gt; 70%
-                </span>
-              ) : (
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
-                  Interstate
-                </span>
-              )}
+              <Truck className="w-4 h-4" />
+              <span>{t.tabMap || 'Market Redirection'}</span>
             </button>
 
             <button
               onClick={() => setActiveMainTab('governance')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 whitespace-nowrap ${
                 activeMainTab === 'governance'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              <Landmark className="w-3.5 h-3.5" />
-              <span>4. Governance & Finance</span>
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                Policies & Loans
-              </span>
+              <Landmark className="w-4 h-4" />
+              <span>{t.tabGovernance || 'Governance & Finance'}</span>
             </button>
           </div>
-
-          {/* Active Status & Quick Jump */}
-          <div className="flex items-center gap-3 text-xs">
-            {formData.farmerName && (
-              <span className="text-slate-500 hidden xl:inline">
-                Selected: <strong className="text-slate-900">{formData.farmerName}</strong> ({formData.cropName} in <strong className="text-emerald-700">{formData.district}</strong>)
-              </span>
-            )}
-
-            {activeMainTab === 'form' && advisory && (
-              <button
-                onClick={() => setActiveMainTab('report')}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition flex items-center gap-1 shrink-0"
-              >
-                <span>View Advisory Report</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {activeMainTab === 'report' && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveMainTab('form')}
-                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 transition flex items-center gap-1 shrink-0"
-                >
-                  <span>← Edit Form</span>
-                </button>
-                <button
-                  onClick={() => setActiveMainTab('governance')}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 transition flex items-center gap-1 shrink-0"
-                >
-                  <Landmark className="w-3.5 h-3.5" />
-                  <span>Policies & Loans Hub →</span>
-                </button>
-                <button
-                  onClick={() => setActiveMainTab('redirection')}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition flex items-center gap-1 shrink-0 ${
-                    Number(formData.regionalPopularity) > 70
-                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold border-amber-400 shadow-xs animate-pulse'
-                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
-                  }`}
-                >
-                  <Truck className="w-3.5 h-3.5" />
-                  <span>{Number(formData.regionalPopularity) > 70 ? '🚨 Route Map →' : 'Interstate Map →'}</span>
-                </button>
-              </div>
-            )}
-
-            {activeMainTab === 'redirection' && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveMainTab('form')}
-                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 transition flex items-center gap-1 shrink-0"
-                >
-                  <span>← Edit Form</span>
-                </button>
-                <button
-                  onClick={() => setActiveMainTab('governance')}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 transition flex items-center gap-1 shrink-0"
-                >
-                  <Landmark className="w-3.5 h-3.5" />
-                  <span>Policies & Loans →</span>
-                </button>
-                {advisory && (
-                  <button
-                    onClick={() => setActiveMainTab('report')}
-                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition flex items-center gap-1 shrink-0"
-                  >
-                    <span>View Advisory →</span>
-                  </button>
-                )}
-              </div>
-            )}
-
-            {activeMainTab === 'governance' && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveMainTab('form')}
-                  className="text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 transition flex items-center gap-1 shrink-0"
-                >
-                  <span>← Edit Form</span>
-                </button>
-                {advisory && (
-                  <button
-                    onClick={() => setActiveMainTab('report')}
-                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-300 transition flex items-center gap-1 shrink-0"
-                  >
-                    <span>View Advisory →</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
         </div>
       </div>
 
@@ -456,15 +345,15 @@ export default function App() {
             ) : (
               <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 shadow-xs">
                 <Sparkles className="w-12 h-12 text-emerald-600 mx-auto mb-3 opacity-40" />
-                <h3 className="text-base font-bold text-slate-800">No Advisory Generated Yet</h3>
+                <h3 className="text-base font-bold text-slate-800">{t.noAdvisoryTitle || 'No Advisory Generated Yet'}</h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                  Please fill the farmer and crop details form to generate your personalized advisory report.
+                  {t.noAdvisoryDesc || 'Please fill the farmer and crop details form to generate your personalized advisory report.'}
                 </p>
                 <button
                   onClick={() => setActiveMainTab('form')}
                   className="mt-5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
                 >
-                  Go to Farmer Form
+                  {t.btnGoToForm || 'Go to Farmer Form'}
                 </button>
               </div>
             )}
@@ -481,6 +370,7 @@ export default function App() {
               defaultLotSize={formData.landSize ? Math.max(20, Math.round(Number(formData.landSize) * 25)) : 80}
               onNavigateToForm={() => setActiveMainTab('form')}
               onNavigateToReport={() => setActiveMainTab('report')}
+              language={language}
             />
           </div>
         )}
@@ -495,6 +385,7 @@ export default function App() {
               farmerName={formData.farmerName}
               onNavigateToForm={() => setActiveMainTab('form')}
               onNavigateToReport={() => setActiveMainTab('report')}
+              language={language}
             />
           </div>
         )}
@@ -502,7 +393,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer language={language} />
 
       {/* AI Diagnostic Scan Animated Modal */}
       <AIGenerationModal
@@ -512,6 +403,7 @@ export default function App() {
         district={formData.district}
         landSize={formData.landSize}
         soilType={formData.soilType}
+        language={language}
         onComplete={handleDiagnosticComplete}
       />
 
@@ -523,6 +415,7 @@ export default function App() {
         setApiKey={setApiKey}
         modelName={modelName}
         setModelName={setModelName}
+        language={language}
       />
 
       {/* History Modal */}
@@ -533,12 +426,14 @@ export default function App() {
         onSelectAdvisory={handleSelectAdvisoryFromHistory}
         onClearHistory={handleClearHistory}
         onDeleteSingle={handleDeleteSingleHistory}
+        language={language}
       />
 
       {/* Design Docs Modal */}
       <DesignDocsModal
         isOpen={docsOpen}
         onClose={() => setDocsOpen(false)}
+        language={language}
       />
 
     </div>
