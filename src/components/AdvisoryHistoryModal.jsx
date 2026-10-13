@@ -1,5 +1,6 @@
 import React from 'react';
-import { History, X, Trash2, ArrowRight, Sparkles, Calendar, MapPin } from 'lucide-react';
+import { History, X, Trash2, ArrowRight } from 'lucide-react';
+import { TRANSLATIONS, getTranslatedCropName, getTranslatedDistrict } from '../translations';
 
 export default function AdvisoryHistoryModal({
   isOpen,
@@ -7,8 +8,11 @@ export default function AdvisoryHistoryModal({
   history = [],
   onSelectAdvisory,
   onClearHistory,
-  onDeleteSingle
+  onDeleteSingle,
+  language = 'en'
 }) {
+  const t = TRANSLATIONS[language] || TRANSLATIONS.en;
+
   if (!isOpen) return null;
 
   return (
@@ -20,8 +24,8 @@ export default function AdvisoryHistoryModal({
           <div className="flex items-center gap-2.5">
             <History className="w-5 h-5 text-emerald-400" />
             <div>
-              <h3 className="font-bold text-base">Saved Farmer Advisories</h3>
-              <p className="text-xs text-slate-400">Review and compare previous crop cycle evaluations</p>
+              <h3 className="font-bold text-base">{t.historyTitle || 'Saved Farmer Advisories'}</h3>
+              <p className="text-xs text-slate-400">{t.historySubtitle || 'Review and compare previous crop cycle evaluations'}</p>
             </div>
           </div>
           <button
@@ -37,8 +41,8 @@ export default function AdvisoryHistoryModal({
           {history.length === 0 ? (
             <div className="text-center py-12 text-slate-400">
               <History className="w-12 h-12 mx-auto mb-3 opacity-30 text-slate-500" />
-              <p className="text-sm font-semibold text-slate-600">No saved advisories yet</p>
-              <p className="text-xs text-slate-400 mt-1">Generate an advisory and click "Save" to build your farm record history</p>
+              <p className="text-sm font-semibold text-slate-600">{t.noHistoryTitle || 'No saved advisories yet'}</p>
+              <p className="text-xs text-slate-400 mt-1">{t.noHistoryDesc || 'Generate an advisory and click "Save" to build your farm record history.'}</p>
             </div>
           ) : (
             history.map((item, idx) => (
@@ -55,47 +59,38 @@ export default function AdvisoryHistoryModal({
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-900 text-sm">{item.farmerProfile.name}</span>
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        {item.cropDetails.cropName}
+                        {getTranslatedCropName(item.cropDetails?.rawCropKey || item.cropDetails?.cropName, language)}
                       </span>
-                    <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(item.timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
+                    </div>
 
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-400" />
-                      {item.farmerProfile.district} ({item.farmerProfile.landSize} Acres)
-                    </span>
-                    <span>•</span>
-                    <span className="font-semibold text-emerald-700">
-                      Health Score: {Number(item.cropAnalysis.healthScore) <= 10 ? Math.round(Number(item.cropAnalysis.healthScore) * 10) : item.cropAnalysis.healthScore}%
-                    </span>
-                    <span>•</span>
-                    <span className="font-medium text-slate-700">
-                      {item.economicOutlook.predictedPriceRange}
-                    </span>
+                    <div className="text-xs text-slate-500 flex items-center gap-3">
+                      <span>{getTranslatedDistrict(item.farmerProfile?.district, language)}</span>
+                      <span>•</span>
+                      <span>{item.farmerProfile?.landSize} {t.acresUnit || 'Acres'}</span>
+                      <span>•</span>
+                      <span className="font-semibold text-emerald-700">
+                        {item.cropAnalysis?.healthScore}%
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
                       onSelectAdvisory(item);
                       onClose();
                     }}
-                    className="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition flex items-center gap-1 shadow-xs"
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shadow-xs"
                   >
-                    <span>Load</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <span>{t.viewReportBtn || 'View Report'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
                   <button
                     onClick={() => onDeleteSingle(idx)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition"
-                    title="Delete record"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                    title={t.deleteBtn || 'Delete'}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -107,13 +102,15 @@ export default function AdvisoryHistoryModal({
 
         {/* Footer */}
         {history.length > 0 && (
-          <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between">
-            <span className="text-xs text-slate-500">{history.length} Saved Advisory Record(s)</span>
+          <div className="bg-slate-50 px-6 py-3.5 border-t border-slate-200 flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-medium">
+              {history.length} {t.saved || 'Saved'}
+            </span>
             <button
               onClick={onClearHistory}
-              className="text-xs font-semibold text-rose-600 hover:text-rose-800 transition"
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline"
             >
-              Clear All History
+              {t.clearAllHistory || 'Clear All History'}
             </button>
           </div>
         )}

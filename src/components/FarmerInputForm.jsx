@@ -28,8 +28,8 @@ import {
   Sun,
   Wind
 } from 'lucide-react';
-import { SOIL_TYPES, CROP_DATABASE, KARNATAKA_DISTRICTS } from '../data/agriKnowledge';
-import { TRANSLATIONS } from '../translations';
+import { SOIL_TYPES, CROP_DATABASE, KARNATAKA_DISTRICTS, SAMPLE_PRESETS } from '../data/agriKnowledge';
+import { TRANSLATIONS, getTranslatedCropName, getTranslatedSoilName, getTranslatedDistrict } from '../translations';
 import { analyzeSoilImageAsync } from '../utils/soilImageAnalyzer';
 import { BENCHMARK_SOIL_SAMPLES, generateSyntheticSoilDataUrl } from '../utils/trainedSoilModel';
 import { evaluateCropAgronomics, getAlternateCropRecommendations } from '../services/advisoryEngine';
@@ -254,17 +254,13 @@ export default function FarmerInputForm({
     <form onSubmit={onSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       
       {/* Form Header */}
-      {/* Form Header */}
       <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-5 sm:p-6">
         <div className="flex items-center gap-2">
           <Compass className="w-5 h-5 text-emerald-300" />
           <h2 className="text-lg sm:text-xl font-bold tracking-tight">
-            AgriCopilot Farmer Dossier
+            {t.appTitle} - {t.farmerProfile}
           </h2>
         </div>
-        <p className="text-xs sm:text-sm text-emerald-100/90 mt-1">
-          Supply your localized farmer profile, land holding, and agronomic parameters to generate actionable advisory
-        </p>
       </div>
 
       <div className="p-5 sm:p-7 space-y-7">
@@ -294,12 +290,11 @@ export default function FarmerInputForm({
                   required
                   value={formData.farmerName}
                   onChange={(e) => handleChange('farmerName', e.target.value)}
-                  placeholder="e.g. Ramesh Patil"
+                  placeholder={t.farmerNamePlaceholder || 'e.g. Ramesh Patil'}
                   className="w-full px-3.5 py-2.5 pl-9 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none font-medium text-slate-800"
                 />
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Farmer or farm enterprise name</p>
             </div>
 
             {/* Land Size in Acres */}
@@ -309,7 +304,7 @@ export default function FarmerInputForm({
                   {t.landSize} <span className="text-rose-500">*</span>
                 </label>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isSmallholder ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-blue-50 text-blue-800 border-blue-300'}`}>
-                  {isSmallholder ? 'Smallholder (< 2 Acres)' : 'Commercial (≥ 2 Acres)'}
+                  {isSmallholder ? (t.smallholderBadge || 'Smallholder (< 2 Acres)') : (t.commercialBadge || 'Commercial (≥ 2 Acres)')}
                 </span>
               </div>
               <input
@@ -320,12 +315,9 @@ export default function FarmerInputForm({
                 required
                 value={formData.landSize}
                 onChange={(e) => handleChange('landSize', e.target.value)}
-                placeholder="e.g. 3.5"
+                placeholder={t.landSizePlaceholder || 'e.g. 2.5'}
                 className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none font-medium"
               />
-              <p className="text-[11px] text-slate-400 mt-1">
-                {isSmallholder ? 'Filters for KCC micro-credit' : 'Filters for Agri-Business loans'}
-              </p>
             </div>
 
             {/* District Selector */}
@@ -335,7 +327,7 @@ export default function FarmerInputForm({
                   {t.district} <span className="text-rose-500">*</span>
                 </label>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                  Karnataka Districts
+                  {t.statDistricts || 'Karnataka Districts'}
                 </span>
               </div>
 
@@ -362,22 +354,16 @@ export default function FarmerInputForm({
                 }}
                 className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none font-medium text-slate-800"
               >
-                <option value="" disabled>-- Select District / Location --</option>
-                <optgroup label="Karnataka Districts">
+                <option value="" disabled>-- {t.selectDistrict || 'Select District'} --</option>
+                <optgroup label={t.statDistricts || 'Karnataka Districts'}>
                   {KARNATAKA_DISTRICTS.map((dist) => (
                     <option key={dist.id} value={dist.id}>
-                      {dist.name}
+                      {getTranslatedDistrict(dist.id, language) || dist.name}
                     </option>
                   ))}
                 </optgroup>
-                <optgroup label="Other Agricultural Districts">
-                  <option value="Yavatmal">Yavatmal</option>
-                  <option value="Ludhiana">Ludhiana</option>
-                  <option value="Junagadh">Junagadh</option>
-                  <option value="Wardha">Wardha</option>
-                </optgroup>
-                <optgroup label="Custom Selection">
-                  <option value="CUSTOM">Type Other District / Village...</option>
+                <optgroup label={t.customDistrict || 'Custom District'}>
+                  <option value="CUSTOM">{t.customDistrict || 'Type Other District...'}</option>
                 </optgroup>
               </select>
 
@@ -581,10 +567,10 @@ export default function FarmerInputForm({
                 onChange={(e) => handleChange('cropName', e.target.value)}
                 className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none font-medium text-slate-800"
               >
-                <option value="" disabled>-- Select Crop Cultivated --</option>
+                <option value="" disabled>-- {t.selectCrop || 'Select Crop'} --</option>
                 {Object.keys(CROP_DATABASE).map((crop) => (
                   <option key={crop} value={crop}>
-                    {crop} ({CROP_DATABASE[crop].category})
+                    {getTranslatedCropName(crop, language)}
                   </option>
                 ))}
               </select>
@@ -601,10 +587,10 @@ export default function FarmerInputForm({
                 onChange={(e) => handleChange('soilType', e.target.value)}
                 className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition outline-none font-medium text-slate-800"
               >
-                <option value="" disabled>-- Select Soil Type --</option>
+                <option value="" disabled>-- {t.selectSoil || 'Select Soil Type'} --</option>
                 {SOIL_TYPES.map((soil) => (
                   <option key={soil.id} value={soil.id}>
-                    {soil.name}
+                    {getTranslatedSoilName(soil.id, language) || soil.name}
                   </option>
                 ))}
               </select>
@@ -713,16 +699,14 @@ export default function FarmerInputForm({
                   <div className="flex items-start gap-1.5 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded-lg w-full">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold">Scarcity Surge Potential ({numericPop}%): </span>
-                      Low district acreage. Local supply will be constrained, projecting premium harvest prices and strong seller leverage.
+                      <span className="font-bold">{t.scarcitySurge}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="flex items-start gap-1.5 text-xs text-slate-700 bg-slate-100 border border-slate-200 p-2 rounded-lg w-full">
                     <Info className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold">Balanced Supply ({numericPop}%): </span>
-                      Standard acreage distribution. Normal price realization governed by seasonal MSP and interstate demand.
+                      <span className="font-bold">{t.balancedDemand}</span>
                     </div>
                   </div>
                 )}
@@ -741,28 +725,25 @@ export default function FarmerInputForm({
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-black text-rose-950 uppercase tracking-wide">
-                            ⚠️ High Agronomic Risk: {formData.cropName} Faces Environmental Stress
+                            ⚠️ {t.highRiskDetected}: {getTranslatedCropName(formData.cropName, language)}
                           </span>
                           <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-200 text-rose-900 border border-rose-300">
-                            {liveAgro.suitabilityScore}% Climate Match
+                            {liveAgro.suitabilityScore}% Match
                           </span>
                         </div>
                         <p className="text-xs text-rose-900/90 mt-1 leading-relaxed">
                           {liveAgro.isSevereRainStress && liveAgro.rainReason}
                           {liveAgro.isSevereTempStress && (liveAgro.isSevereRainStress ? ' ' : '') + liveAgro.tempReason}
                           {liveAgro.isSevereSoilStress && ((liveAgro.isSevereRainStress || liveAgro.isSevereTempStress) ? ' ' : '') + liveAgro.soilReason}
-                          {!liveAgro.isSevereRainStress && !liveAgro.isSevereTempStress && !liveAgro.isSevereSoilStress && (
-                            `Under your selected ${formData.soilType} soil, ${formData.temperature}°C, and ${formData.rainfall}mm rainfall, ${formData.cropName} will experience sub-optimal growth.`
-                          )}
                         </p>
 
                         <div className="mt-2.5 pt-2 border-t border-rose-200/80 flex flex-wrap items-center gap-2 text-xs">
-                          <span className="font-bold text-slate-800">💡 Recommended Alternate Crop:</span>
+                          <span className="font-bold text-slate-800">💡 {t.alternateCrop}:</span>
                           <span className="font-extrabold text-emerald-900 bg-emerald-100 px-2.5 py-0.5 rounded-lg border border-emerald-300">
                             {liveAlternates.bestAlternative.cropName}
                           </span>
                           <span className="text-emerald-800 font-semibold text-[11px]">
-                            ({liveAlternates.bestAlternative.suitabilityScore}% Fit • Projected Health: {Number(liveAlternates.bestAlternative.projectedHealthScore) <= 10 ? Math.round(Number(liveAlternates.bestAlternative.projectedHealthScore) * 10) : liveAlternates.bestAlternative.projectedHealthScore}%)
+                            ({liveAlternates.bestAlternative.suitabilityScore}% Fit • {t.projectedHealth}: {Number(liveAlternates.bestAlternative.projectedHealthScore) <= 10 ? Math.round(Number(liveAlternates.bestAlternative.projectedHealthScore) * 10) : liveAlternates.bestAlternative.projectedHealthScore}%)
                           </span>
                         </div>
                       </div>
@@ -774,7 +755,7 @@ export default function FarmerInputForm({
                       className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-800/20 whitespace-nowrap shrink-0 self-start sm:self-center group"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-300 group-hover:rotate-12 transition-transform" />
-                      <span>Switch to {liveAlternates.bestAlternative.cropName.split(' ')[0]}</span>
+                      <span>{t.switchToAlternate}</span>
                     </button>
                   </div>
                 </div>
@@ -783,12 +764,9 @@ export default function FarmerInputForm({
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="font-semibold">
-                      Field Conditions Favorable: <strong>{formData.cropName}</strong> matches {formData.soilType} soil, {formData.temperature}°C, and {formData.rainfall}mm rainfall ({liveAgro.suitabilityScore}% fit).
+                      {getTranslatedCropName(formData.cropName, language)} • {getTranslatedSoilName(formData.soilType, language)} ({liveAgro.suitabilityScore}% Fit)
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">
-                    Healthy Match
-                  </span>
                 </div>
               )
             )}
@@ -811,35 +789,6 @@ export default function FarmerInputForm({
           </div>
 
           <div className="space-y-4">
-            
-            {/* Quick Benchmark Soil Samples Strip */}
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-left">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                  <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Quick Test with Calibrated Indian Soil Samples:</span>
-                </div>
-                <span className="text-[11px] text-slate-500 font-medium">Click any sample to test live model inference</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {BENCHMARK_SOIL_SAMPLES.map(sample => (
-                  <button
-                    key={sample.id}
-                    type="button"
-                    onClick={() => handleSelectBenchmark(sample)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-xs font-medium text-slate-700 transition shadow-2xs group"
-                    title={sample.desc}
-                  >
-                    <span 
-                      className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs group-hover:scale-110 transition-transform shrink-0" 
-                      style={{ backgroundColor: sample.colorHex }}
-                    />
-                    <span>{sample.shortName}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Main Drag-and-Drop Image Area */}
             <div
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -1279,7 +1228,7 @@ export default function FarmerInputForm({
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Advisory integrates Agmarknet market prices, soil suitability and policy portals</span>
+            <span>{t.statOffline || 'Advisory integrates Agmarknet market prices, soil suitability and policy portals'}</span>
           </div>
 
           <button
